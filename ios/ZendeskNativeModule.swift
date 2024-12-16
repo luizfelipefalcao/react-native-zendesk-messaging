@@ -178,24 +178,63 @@ class ZendeskNativeModule: NSObject {
   ///    - call openMessageViewByPushNotification again
   ///    - receivedUserInfo exist and call PushNotifications.handleTap
   ///    - viewController is provided -> open messaging view
+
+  //static func openMessageViewByPushNotification( // This function is commented as a test to fix the [iOS] Can't select a conversation
+  //  _ userInfo: [AnyHashable: Any]? = nil,
+  //  completionHandler: ((Bool) -> Void)? = nil
+  //) -> Void {
+  //  guard let userInfo = userInfo ?? receivedUserInfo else {
+  //    completionHandler?(false)
+  //    return
+  //  }
+
+  //  PushNotifications.handleTap(userInfo) { viewController in
+  //    receivedUserInfo = nil
+  //    guard let rootController = RCTPresentedViewController(),
+  //          let viewController = viewController else {
+  //      completionHandler?(viewController == nil)
+  //      return
+  //    }
+  //    rootController.show(viewController, sender: self)
+  //    completionHandler?(false)
+  //  }
+  //}
+
   static func openMessageViewByPushNotification(
     _ userInfo: [AnyHashable: Any]? = nil,
     completionHandler: ((Bool) -> Void)? = nil
   ) -> Void {
-    guard let userInfo = userInfo ?? receivedUserInfo else {
-      completionHandler?(false)
-      return
-    }
-
-    PushNotifications.handleTap(userInfo) { viewController in
-      receivedUserInfo = nil
-      guard let rootController = RCTPresentedViewController(),
-            let viewController = viewController else {
-        completionHandler?(viewController == nil)
-        return
+      guard let userInfo = userInfo ?? receivedUserInfo else {
+          completionHandler?(false)
+          return
       }
-      rootController.show(viewController, sender: self)
-      completionHandler?(false)
-    }
+
+      PushNotifications.handleTap(userInfo) { viewController in
+          receivedUserInfo = nil
+
+          // Ensure root controller is a navigation controller, otherwise handle it differently
+          guard let rootController = RCTPresentedViewController() else {
+              completionHandler?(false)
+              return
+          }
+
+          if let navigationController = rootController as? UINavigationController {
+              // If there's a navigation controller, push the Zendesk view onto the stack
+              if let zendeskVC = viewController {
+                  navigationController.pushViewController(zendeskVC, animated: true)
+              } else {
+                  completionHandler?(false)
+              }
+          } else {
+              // If no navigation controller exists, present the Zendesk view directly
+              if let zendeskVC = viewController {
+                  rootController.show(zendeskVC, sender: self)
+              } else {
+                  completionHandler?(false)
+              }
+          }
+          completionHandler?(false)
+      }
   }
+
 }

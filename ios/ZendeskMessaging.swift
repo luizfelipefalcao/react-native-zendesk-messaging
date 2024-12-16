@@ -126,7 +126,28 @@ class ZendeskMessaging: RCTEventEmitter {
     }
   }
 
-  @objc(openMessagingView:rejecter:)
+  //@objc(openMessagingView:rejecter:)
+  //func openMessagingView(
+  //  resolver resolve: @escaping RCTPromiseResolveBlock,
+  //  rejecter reject: @escaping RCTPromiseRejectBlock
+  //) -> Void {
+  //  if !initialized {
+  //    reject(nil, "Zendesk instance not initialized", nil)
+  //    return
+  //  }
+
+  //  DispatchQueue.main.async {
+  //    guard let viewController = ZendeskNativeModule.shared.getMessagingViewController(),
+  //          let rootController = RCTPresentedViewController() else {
+  //      reject(nil, "cannot open messaging view", nil)
+  //      return
+  //    }
+  //    rootController.show(viewController, sender: self)
+  //    resolve(nil)
+  //  }
+  //}
+
+  @objc(openMessagingView:rejecter:) // This function is commented as a test to fix the [iOS] Can't select a conversation
   func openMessagingView(
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
@@ -142,27 +163,17 @@ class ZendeskMessaging: RCTEventEmitter {
         reject(nil, "cannot open messaging view", nil)
         return
       }
-      rootController.show(viewController, sender: self)
-      resolve(nil)
-    }
-  }
 
-  @objc(closeMessagingView:rejecter:)
-  func closeMessagingView(
-    resolver resolve: @escaping RCTPromiseResolveBlock,
-    rejecter reject: @escaping RCTPromiseRejectBlock
-  ) -> Void {
-    if !initialized {
-      reject(nil, "Zendesk instance not initialized", nil)
-      return
-    }
-
-    DispatchQueue.main.async {
-      guard let rootViewController = UIApplication.shared.keyWindow?.rootViewController else {
-        reject(nil, "cannot close messaging view", nil)
-        return
+      // Check if the rootController has a navigation controller
+      if let navigationController = rootController.navigationController {
+        // If navigation controller exists, push Zendesk view as a full screen
+        navigationController.pushViewController(viewController, animated: true)
+      } else {
+        // If there's no navigation controller, create one and push Zendesk view
+        let navigationController = UINavigationController(rootViewController: viewController)
+        rootController.present(navigationController, animated: true, completion: nil)
       }
-      rootViewController.dismiss(animated: true, completion: nil)
+
       resolve(nil)
     }
   }
